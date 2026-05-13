@@ -56,38 +56,67 @@ btnGuardar.addEventListener('click', async () => {
     }
 });
 
+// ... (Mantén toda tu parte 1, 2 y 3 igual, hasta la línea donde termina el botón de Firebase) ...
+
+// FUNCIÓN NUEVA: Para agregar a la lista e incluir botón de WhatsApp
+function agregarALista(tipoDoc, clienteNombre) {
+    document.getElementById('seccionClientes').style.display = 'block';
+    const lista = document.getElementById('listaClientes');
+    
+    const li = document.createElement('li');
+    const texto = document.createElement('span');
+    texto.innerHTML = `<strong>${tipoDoc}</strong> generado para: ${clienteNombre}`;
+    
+    // Configurar el mensaje prearmado para WhatsApp
+    const mensajeWpp = encodeURIComponent(`Hola ${clienteNombre}, te escribo de Portones Automáticos Córdoba. Te envío adjunto tu ${tipoDoc}.`);
+    
+    const btnWpp = document.createElement('a');
+    btnWpp.href = `https://wa.me/?text=${mensajeWpp}`;
+    btnWpp.target = '_blank';
+    btnWpp.className = 'btn-wpp';
+    btnWpp.textContent = '📲 Enviar por WhatsApp';
+    
+    li.appendChild(texto);
+    li.appendChild(btnWpp);
+    lista.appendChild(li);
+}
+
 // 4. GENERAR PDF: PRESUPUESTO
 btnPresupuesto.addEventListener('click', () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const data = getDatosFormulario();
 
-    // Encabezado
-    doc.addImage(logoBase64, 'PNG', 15, 15, 40, 40);
+    if(!data.cliente) return alert("Por favor ingresa un cliente.");
+
+    // Encabezado (Logo centrado)
+    // El ancho de A4 es 210mm. Si la imagen mide 40, (210-40)/2 = 85.
+    doc.addImage(logoBase64, 'PNG', 85, 10, 40, 40);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("PORTONES AUTOMÁTICOS CÓRDOBA", 60, 30);
+    // Texto centrado usando align: "center"
+    doc.text("PORTONES AUTOMÁTICOS CÓRDOBA", 105, 58, null, null, "center");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    doc.text(data.fecha, 60, 40);
+    doc.text(data.fecha, 105, 66, null, null, "center");
     
     doc.setFont("helvetica", "bold");
-    doc.text(`Cliente: ${data.cliente}`, 15, 70);
+    doc.text(`Cliente: ${data.cliente}`, 15, 85); // Bajamos un poco las coordenadas Y
     
     // Cuerpo del presupuesto
     doc.setFont("helvetica", "normal");
-    doc.text("De acuerdo a lo conversado, se detallan a continuación las soluciones propuestas para optimizar", 15, 80);
-    doc.text("las entradas del hogar, priorizando seguridad, comodidad y durabilidad en el tiempo.", 15, 86);
+    doc.text("De acuerdo a lo conversado, se detallan a continuación las soluciones propuestas para optimizar", 15, 95);
+    doc.text("las entradas del hogar, priorizando seguridad, comodidad y durabilidad en el tiempo.", 15, 101);
     
-    // Detalles (Separando por saltos de línea para que se ajuste)
+    // Detalles
     doc.setFont("helvetica", "bold");
-    doc.text("DETALLES DEL PROYECTO", 15, 100);
+    doc.text("DETALLES DEL PROYECTO", 15, 115);
     doc.setFont("helvetica", "normal");
     const lineasDetalle = doc.splitTextToSize(data.detalles, 180);
-    doc.text(lineasDetalle, 15, 110);
+    doc.text(lineasDetalle, 15, 125);
     
-    let Y_final_detalles = 110 + (lineasDetalle.length * 7) + 10;
+    let Y_final_detalles = 125 + (lineasDetalle.length * 7) + 10;
     
     // Totales y Condiciones
     doc.setFont("helvetica", "bold");
@@ -107,6 +136,7 @@ btnPresupuesto.addEventListener('click', () => {
     doc.text("Cliente", 150, 267);
 
     doc.save(`Presupuesto_${data.cliente}.pdf`);
+    agregarALista("Presupuesto", data.cliente); // Llamamos a la nueva función
 });
 
 // 5. GENERAR PDF: RECIBO DE PAGO
@@ -115,31 +145,33 @@ btnRecibo.addEventListener('click', () => {
     const doc = new jsPDF();
     const data = getDatosFormulario();
 
-    // Encabezado
-    doc.addImage(logoBase64, 'PNG', 15, 15, 40, 40);
+    if(!data.cliente) return alert("Por favor ingresa un cliente.");
+
+    // Encabezado (Logo centrado)
+    doc.addImage(logoBase64, 'PNG', 85, 10, 40, 40);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("PORTONES AUTOMÁTICOS CÓRDOBA", 60, 30);
+    doc.text("PORTONES AUTOMÁTICOS CÓRDOBA", 105, 58, null, null, "center");
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    doc.text(data.fecha, 60, 40);
+    doc.text(data.fecha, 105, 66, null, null, "center");
     
-    // Título Recibo
+    // Título Recibo (Centrado)
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.text("RECIBO DE PAGO", 85, 65);
+    doc.text("RECIBO DE PAGO", 105, 80, null, null, "center");
     
     doc.setFontSize(12);
-    doc.text(`Cliente: ${data.cliente}`, 15, 80);
+    doc.text(`Cliente: ${data.cliente}`, 15, 95);
     
     doc.setFont("helvetica", "normal");
-    doc.text("Por medio del presente se deja constancia de la recepción de dinero correspondiente al proyecto", 15, 90);
-    doc.text("de portones automáticos detallado previamente entre las partes.", 15, 96);
+    doc.text("Por medio del presente se deja constancia de la recepción de dinero correspondiente al proyecto", 15, 105);
+    doc.text("de portones automáticos detallado previamente entre las partes.", 15, 111);
     
-    // Tabla usando jsPDF-AutoTable
+    // Tabla
     doc.autoTable({
-        startY: 110,
+        startY: 125,
         head: [['Concepto', 'Monto']],
         body: [
             ['Seña entregada', `$${data.sena.toLocaleString("es-AR")} ARS`],
@@ -164,4 +196,5 @@ btnRecibo.addEventListener('click', () => {
     doc.text("Firma cliente", 145, 267);
 
     doc.save(`ReciboPago_${data.cliente}.pdf`);
+    agregarALista("Recibo", data.cliente); // Llamamos a la nueva función
 });
