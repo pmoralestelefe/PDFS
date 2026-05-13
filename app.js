@@ -3,12 +3,14 @@ import { getFirestore, collection, addDoc } from "https://www.gstatic.com/fireba
 
 // 1. CONFIGURACIÓN DE FIREBASE (Reemplaza con tus datos de la consola de Firebase)
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "TUS_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyDQg2rLRoWN2g5uLErzsBncb8t7Ag5xDeE",
+  authDomain: "pdfs-7996d.firebaseapp.com",
+  databaseURL: "https://pdfs-7996d-default-rtdb.firebaseio.com",
+  projectId: "pdfs-7996d",
+  storageBucket: "pdfs-7996d.firebasestorage.app",
+  messagingSenderId: "115542680241",
+  appId: "1:115542680241:web:0f6f2a5faeb54bfbe63890",
+  measurementId: "G-PGR7300RN8"
 };
 
 const app = initializeApp(firebaseConfig);
