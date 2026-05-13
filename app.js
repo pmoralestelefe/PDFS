@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 // 1. CONFIGURACIÓN DE FIREBASE (Reemplaza con tus datos de la consola de Firebase)
 const firebaseConfig = {
@@ -37,6 +37,10 @@ function getDatosFormulario() {
 }
 
 // 3. GUARDAR EN FIREBASE
+// Variable global para recordar el ID del documento recién guardado
+let ultimoIdGuardado = null; 
+
+// 3. GUARDAR EN FIREBASE
 btnGuardar.addEventListener('click', async () => {
     const data = getDatosFormulario();
     if (!data.cliente || data.total === 0) {
@@ -49,6 +53,7 @@ btnGuardar.addEventListener('click', async () => {
             ...data,
             fechaRegistro: new Date()
         });
+        ultimoIdGuardado = docRef.id; // Capturamos el ID asignado por Firebase
         alert("Proyecto guardado exitosamente en la base de datos.");
     } catch (e) {
         console.error("Error al guardar: ", e);
@@ -56,10 +61,8 @@ btnGuardar.addEventListener('click', async () => {
     }
 });
 
-// ... (Mantén toda tu parte 1, 2 y 3 igual, hasta la línea donde termina el botón de Firebase) ...
-
-// FUNCIÓN NUEVA: Para agregar a la lista e incluir botón de WhatsApp
-function agregarALista(tipoDoc, clienteNombre) {
+// FUNCIÓN MODIFICADA: Para agregar a la lista e incluir botón de WhatsApp y Borrar
+function agregarALista(tipoDoc, clienteNombre, docIdFirebase) {
     document.getElementById('seccionClientes').style.display = 'block';
     const lista = document.getElementById('listaClientes');
     
@@ -67,17 +70,53 @@ function agregarALista(tipoDoc, clienteNombre) {
     const texto = document.createElement('span');
     texto.innerHTML = `<strong>${tipoDoc}</strong> generado para: ${clienteNombre}`;
     
-    // Configurar el mensaje prearmado para WhatsApp
+    // Contenedor para los botones (Wpp y Borrar)
+    const contenedorBotones = document.createElement('div');
+    contenedorBotones.style.display = 'flex';
+    contenedorBotones.style.gap = '10px';
+    contenedorBotones.style.flexWrap = 'wrap';
+    contenedorBotones.style.justifyContent = 'center';
+
+    // Botón WhatsApp
     const mensajeWpp = encodeURIComponent(`Hola ${clienteNombre}, te escribo de Portones Automáticos Córdoba. Te envío adjunto tu ${tipoDoc}.`);
-    
     const btnWpp = document.createElement('a');
     btnWpp.href = `https://wa.me/?text=${mensajeWpp}`;
     btnWpp.target = '_blank';
     btnWpp.className = 'btn-wpp';
     btnWpp.textContent = '📲 Enviar por WhatsApp';
+    contenedorBotones.appendChild(btnWpp);
+
+    // Botón Borrar (Solo se crea si se guardó en Firebase previamente)
+    if (docIdFirebase) {
+        const btnBorrar = document.createElement('button');
+        btnBorrar.textContent = '🗑️ Borrar de BD';
+        btnBorrar.style.backgroundColor = '#ef4444'; // Color rojo
+        btnBorrar.style.color = 'white';
+        btnBorrar.style.padding = '8px 15px';
+        btnBorrar.style.border = 'none';
+        btnBorrar.style.borderRadius = '4px';
+        btnBorrar.style.cursor = 'pointer';
+
+        btnBorrar.addEventListener('click', async () => {
+            const confirmar = confirm(`¿Estás seguro de borrar el registro de ${clienteNombre} de la base de datos?`);
+            if (confirmar) {
+                try {
+                    // Borramos el documento de Firestore
+                    await deleteDoc(doc(db, "proyectos_aprobados", docIdFirebase));
+                    // Quitamos el elemento de la pantalla
+                    li.remove(); 
+                    alert("Registro eliminado exitosamente.");
+                } catch (error) {
+                    console.error("Error al borrar: ", error);
+                    alert("Error al intentar borrar de Firebase.");
+                }
+            }
+        });
+        contenedorBotones.appendChild(btnBorrar);
+    }
     
     li.appendChild(texto);
-    li.appendChild(btnWpp);
+    li.appendChild(contenedorBotones);
     lista.appendChild(li);
 }
 
@@ -136,7 +175,8 @@ btnPresupuesto.addEventListener('click', () => {
     doc.text("Cliente", 150, 267);
 
     doc.save(`Presupuesto_${data.cliente}.pdf`);
-    agregarALista("Presupuesto", data.cliente); // Llamamos a la nueva función
+    agregarALista("Presupuesto", data.cliente, ultimoIdGuardado); // Actualizado
+    ultimoIdGuardado = null; // Reiniciar
 });
 
 // 5. GENERAR PDF: RECIBO DE PAGO
@@ -196,5 +236,6 @@ btnRecibo.addEventListener('click', () => {
     doc.text("Firma cliente", 145, 267);
 
     doc.save(`ReciboPago_${data.cliente}.pdf`);
-    agregarALista("Recibo", data.cliente); // Llamamos a la nueva función
+    agregarALista("Recibo", data.cliente, ultimoIdGuardado); // Actualizado
+    ultimoIdGuardado = null; // Reiniciar
 });
