@@ -105,3 +105,23 @@ button {
 .btn-pdf:hover { 
     background-color: #059669;
 }
+/* --- DISEÑO ADAPTABLE PARA MÓVILES (Responsive) --- */
+@media (max-width: 600px) {
+    .row {
+        flex-direction: column; /* Apila los inputs de total y seña */
+        gap: 10px;
+    }
+    .acciones {
+        flex-direction: column; /* Apila los botones principales */
+    }
+    .client-list li {
+        flex-direction: column; /* Apila el texto y los botones en la lista */
+        text-align: center;
+        gap: 15px;
+    }
+    .btn-wpp {
+        width: 100%;
+        box-sizing: border-box;
+        display: block;
+    }
+}
