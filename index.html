@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Documentos - Portones Automáticos Córdoba</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Presupuestos y Recibos</h1>
+        
+        <form id="docForm">
+            <div class="form-group">
+                <label for="cliente">Nombre del Cliente:</label>
+                <input type="text" id="cliente" placeholder="Ej: Adriana Zurano / Marcelo López" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="fecha">Fecha:</label>
+                <input type="text" id="fecha" placeholder="Ej: Córdoba, Argentina - 28/04" required>
+            </div>
+
+            <div class="form-group">
+                <label for="detalles">Detalles del Proyecto (Presupuesto):</label>
+                <textarea id="detalles" rows="6" placeholder="Ej: Portón nuevo estilo tabloneado. Bastidor en chapa 18..."></textarea>
+            </div>
+
+            <div class="form-group row">
+                <div class="col">
+                    <label for="total">Total del Proyecto ($ ARS):</label>
+                    <input type="number" id="total" required>
+                </div>
+                <div class="col">
+                    <label for="sena">Seña Entregada ($ ARS):</label>
+                    <input type="number" id="sena" required>
+                </div>
+            </div>
+
+            <div class="acciones">
+                <button type="button" id="btnGuardar" class="btn-firebase">1. Guardar en Firebase</button>
+                <button type="button" id="btnPresupuesto" class="btn-pdf">2. Generar Presupuesto PDF</button>
+                <button type="button" id="btnRecibo" class="btn-pdf">3. Generar Recibo PDF</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
