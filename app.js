@@ -249,20 +249,218 @@ btnRecibo.addEventListener('click', () => {
     agregarALista("Recibo", data.cliente, ultimoIdGuardado, data.telefono);
     ultimoIdGuardado = null; // Reiniciar
 });
-// 6. CARGAR BASE DE DATOS AL INICIAR
+// 6. CARGAR BASE DE DATOS Y AGRUPAR POR CLIENTE
 async function cargarBaseDeDatos() {
     try {
         const querySnapshot = await getDocs(collection(db, "proyectos_aprobados"));
-        
+        const contenedor = document.getElementById("listaClientesContenedor");
+        contenedor.innerHTML = ""; // Limpiar panel
+
+        // Objeto intermedio para agrupar documentos por cliente único
+        const clientesAgrupados = {};
+
         querySnapshot.forEach((docSnap) => {
-            const datos = docSnap.data();
-            // Mostramos los datos históricos como "Registro BD"
-            agregarALista("Registro BD", datos.cliente, docSnap.id, datos.telefono);
+            const data = docSnap.data();
+            const idDoc = docSnap.id;
+
+            // Creamos una clave única usando Nombre + Teléfono para evitar colisiones si se repiten nombres
+            const claveCliente = `${data.cliente.trim()}_${data.telefono.trim()}`;
+
+            if (!clientesAgrupados[claveCliente]) {
+                clientesAgrupados[claveCliente] = {
+                    nombre: data.cliente,
+                    telefono: data.telefono,
+                    documentos: []
+                };
+            }
+
+            // Guardamos el documento dentro del array del cliente correspondiente
+            clientesAgrupados[claveCliente].documentos.push({
+                id: idDoc,
+                tipo: data.tipoDocumento || (data.detalles.toLowerCase().includes("seña") || data.sena >= data.total ? "Recibo" : "Presupuesto"),
+                fecha: data.fecha,
+                total: data.total,
+                sena: data.sena,
+                saldo: data.saldo,
+                detalles: data.detalles
+            });
         });
+
+        const listaClientes = Object.values(clientesAgrupados);
+
+        if (listaClientes.length === 0) {
+            document.getElementById("seccionClientes").style.display = "none";
+            return;
+        }
+
+        document.getElementById("seccionClientes").style.display = "block";
+
+        // Renderizar cada cliente agrupado
+        listaClientes.forEach((cliente) => {
+            // 1. Crear Tarjeta contenedor del Cliente
+            const tarjetaCliente = document.createElement("div");
+            tarjetaCliente.className = "cliente-group-card";
+
+            // 2. Encabezado del Cliente (Información y Botón de eliminación completa)
+            const headerCliente = document.createElement("div");
+            headerCliente.className = "cliente-group-header";
+
+            const infoCliente = document.createElement("div");
+            infoCliente.className = "cliente-info";
+            infoCliente.innerHTML = `<h3>👤 ${cliente.nombre}</h3><p>📞 WhatsApp: ${cliente.telefono}</p>`;
+
+            const btnBorrarCliente = document.createElement("button");
+            btnBorrarCliente.className = "btn-borrar-cliente";
+            btnBorrarCliente.innerHTML = "🗑️ Eliminar Cliente";
+            btnBorrarCliente.addEventListener("click", async () => {
+                const conf = confirm(`¿Estás seguro de eliminar al cliente "${cliente.nombre}"? Esto borrará permanentemente sus ${cliente.documentos.length} archivos asociados de la base de datos.`);
+                if (conf) {
+                    // Borra en bucle todos los documentos de este cliente en Firebase
+                    for (const docId of cliente.documentos.map(d => d.id)) {
+                        await deleteDoc(doc(db, "proyectos_aprobados", docId));
+                    }
+                    alert(`Cliente ${cliente.nombre} y sus documentos eliminados con éxito.`);
+                    cargarBaseDeDatos(); // Recargar visualización
+                }
+            });
+
+            headerCliente.appendChild(infoCliente);
+            headerCliente.appendChild(btnBorrarCliente);
+            tarjetaCliente.appendChild(headerCliente);
+
+            // 3. Listado interno de documentos generados para este cliente
+            const listaDocumentosContainer = document.createElement("div");
+            listaDocumentosContainer.className = "documentos-cliente-list";
+
+            cliente.documentos.forEach((documento) => {
+                const itemRow = document.createElement("div");
+                // Clases dinámicas según sea Presupuesto o Recibo
+                itemRow.className = `documento-item-row ${documento.tipo === "Recibo" ? "recibo-border" : ""}`;
+
+                // Meta datos visibles del archivo
+                const metaDoc = document.createElement("div");
+                metaDoc.className = "documento-meta";
+                metaDoc.innerHTML = `
+                    <span><strong>${documento.tipo.toUpperCase()}:</strong> $${documento.total.toLocaleString("es-AR")} (Seña: $${documento.sena.toLocaleString("es-AR")})</span>
+                    <small>📅 Fecha: ${documento.fecha} | 🛠️ Detalle: ${documento.detalles.substring(0, 45)}...</small>
+                `;
+
+                // Botones de acción del documento individual
+                const accionesContainer = document.createElement("div");
+                accionesContainer.className = "documento-acciones-buttons";
+
+                // Botón Regenerar/Descargar PDF localmente
+                const btnDescargar = document.createElement("button");
+                btnDescargar.className = "btn-descargar-doc";
+                btnDescargar.innerHTML = "📥 PDF";
+                btnDescargar.addEventListener("click", () => {
+                    // Re-ejecuta la lógica de jsPDF usando los datos del archivo guardado
+                    const { jsPDF } = window.jspdf;
+                    const docPDF = new jsPDF();
+                    
+                    // Renderizado del Header del PDF
+                    if (typeof logoBase64 !== 'undefined' && logoBase64.length > 50) {
+                        docPDF.addImage(logoBase64, 'PNG', 15, 10, 40, 40);
+                    }
+                    docPDF.setFont("helvetica", "bold");
+                    docPDF.setFontSize(18);
+                    docPDF.text("PORTONES AUTOMÁTICOS CÓRDOBA", 60, 22);
+                    docPDF.setFontSize(10);
+                    docPDF.setFont("helvetica", "normal");
+                    docPDF.text("Automatizaciones - Herrería de Obra - Mantenimiento", 60, 28);
+                    docPDF.text("Córdoba Capital, Argentina", 60, 33);
+                    docPDF.text(`WhatsApp: +54 9 ${cliente.telefono}`, 60, 38);
+
+                    docPDF.setDrawColor(0, 173, 181);
+                    docPDF.setLineWidth(1);
+                    docPDF.line(15, 52, 195, 52);
+
+                    docPDF.setFontSize(14);
+                    docPDF.setFont("helvetica", "bold");
+                    docPDF.text(`${documento.tipo.toUpperCase()} DE TRABAJO`, 15, 62);
+                    
+                    docPDF.setFontSize(10);
+                    docPDF.setFont("helvetica", "normal");
+                    docPDF.text(`Fecha: ${documento.fecha}`, 150, 62);
+                    docPDF.text(`Cliente: ${cliente.nombre}`, 15, 72);
+                    docPDF.text(`Teléfono: ${cliente.telefono}`, 15, 78);
+
+                    // Estructura de tabla informativa
+                    window.jspdf.plugins.autotable.default(docPDF, {
+                        startY: 88,
+                        head: [['Descripción del Proyecto / Servicio', 'Monto Total', 'Seña Recibida', 'Saldo Pendiente']],
+                        body: [[
+                            documento.detalles,
+                            `$${documento.total.toLocaleString("es-AR")} ARS`,
+                            `$${documento.sena.toLocaleString("es-AR")} ARS`,
+                            `$${documento.saldo.toLocaleString("es-AR")} ARS`
+                        ]],
+                        theme: 'grid',
+                        headStyles: { fillColor: [0, 173, 181], textColor: [255, 255, 255] },
+                        columnStyles: { 0: { cellWidth: 90 } },
+                        styles: { fontSize: 10, cellPadding: 5 }
+                    });
+
+                    let finalY = docPDF.lastAutoTable.finalY + 15;
+                    docPDF.setFontSize(9);
+                    if (documento.tipo === "Presupuesto") {
+                        docPDF.text("• Los precios e insumos detallados están sujetos a variaciones sin previo aviso antes de la confirmación.", 15, finalY);
+                        docPDF.text(`• Saldo final: $${documento.saldo.toLocaleString("es-AR")} ARS al finalizar el trabajo.`, 15, finalY + 6);
+                    } else {
+                        docPDF.text("El saldo restante deberá ser abonado al momento de la finalización del trabajo, contra entrega y", 15, finalY);
+                        docPDF.text("conformidad del cliente. El presente documento reviste carácter de comprobante.", 15, finalY + 6);
+                    }
+
+                    docPDF.text("_________________________", 30, 240);
+                    docPDF.text("Representante PAC", 38, 246);
+                    docPDF.text("_________________________", 130, 240);
+                    docPDF.text("Firma de Conformidad Cliente", 132, 246);
+
+                    docPDF.save(`${documento.tipo}_${cliente.nombre.replace(/\s+/g, '')}.pdf`);
+                });
+
+                // Botón Compartir por enlace de WhatsApp Directo
+                const btnWpp = document.createElement("a");
+                btnWpp.className = "btn-wpp-doc";
+                const prefijo = cliente.telefono.startsWith("54") ? "" : "549";
+                const msg = encodeURIComponent(`Hola ${cliente.nombre}, te escribo de Portones Automáticos Córdoba. Te comparto los datos de tu ${documento.tipo} generado con fecha ${documento.fecha} por un Total de $${documento.total.toLocaleString("es-AR")} ARS.`);
+                btnWpp.href = `https://wa.me/${prefijo}${cliente.telefono.replace(/\D/g, "")}?text=${msg}`;
+                btnWpp.target = "_blank";
+                btnWpp.innerHTML = "📲 Enviar";
+
+                // Botón Borrar Archivo Individual de la base de datos
+                const btnBorrarDoc = document.createElement("button");
+                btnBorrarDoc.className = "btn-borrar-doc";
+                btnBorrarDoc.innerHTML = "🗑️";
+                btnBorrarDoc.title = "Borrar este documento individual";
+                btnBorrarDoc.addEventListener("click", async () => {
+                    const conf = confirm(`¿Estás seguro de eliminar este ${documento.tipo} del sistema? No se afectarán los demás documentos del cliente.`);
+                    if (conf) {
+                        await deleteDoc(doc(db, "proyectos_aprobados", documento.id));
+                        alert("Documento eliminado correctamente.");
+                        cargarBaseDeDatos(); // Recargar visualización en tiempo real
+                    }
+                });
+
+                accionesContainer.appendChild(btnDescargar);
+                accionesContainer.appendChild(btnWpp);
+                accionesContainer.appendChild(btnBorrarDoc);
+
+                itemRow.appendChild(metaDoc);
+                itemRow.appendChild(accionesContainer);
+                listaDocumentosContainer.appendChild(itemRow);
+            });
+
+            tarjetaCliente.appendChild(listaDocumentosContainer);
+            contenedor.appendChild(tarjetaCliente);
+        });
+
     } catch (error) {
-        console.error("Error al cargar la base de datos de Firebase: ", error);
+        console.error("Error al estructurar y cargar base de clientes:", error);
     }
 }
 
-// Llamamos a la función automáticamente cuando carga el archivo
-cargarBaseDeDatos();
+// Escuchador automático para renderizar la lista al iniciar la pestaña
+document.addEventListener("DOMContentLoaded", () => {
+    cargarBaseDeDatos();
+});
