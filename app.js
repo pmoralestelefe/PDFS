@@ -246,4 +246,21 @@ btnRecibo.addEventListener('click', () => {
     doc.save(`ReciboPago_${data.cliente}.pdf`);
     agregarALista("Recibo", data.cliente, ultimoIdGuardado, data.telefono);
     ultimoIdGuardado = null; // Reiniciar
+// 6. CARGAR BASE DE DATOS AL INICIAR
+async function cargarBaseDeDatos() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "proyectos_aprobados"));
+        
+        querySnapshot.forEach((docSnap) => {
+            const datos = docSnap.data();
+            // Mostramos los datos históricos como "Registro BD"
+            agregarALista("Registro BD", datos.cliente, docSnap.id, datos.telefono);
+        });
+    } catch (error) {
+        console.error("Error al cargar la base de datos de Firebase: ", error);
+    }
+}
+
+// Llamamos a la función automáticamente cuando carga el archivo
+cargarBaseDeDatos();
 });
