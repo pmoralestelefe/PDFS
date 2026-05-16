@@ -63,7 +63,8 @@ btnGuardar.addEventListener('click', async () => {
 });
 
 // FUNCIÓN MODIFICADA: Para agregar a la lista e incluir botón de WhatsApp y Borrar
-function agregarALista(tipoDoc, clienteNombre, docIdFirebase) {
+// Agregamos "telefono" como cuarto parámetro
+function agregarALista(tipoDoc, clienteNombre, docIdFirebase, telefono) {
     document.getElementById('seccionClientes').style.display = 'block';
     const lista = document.getElementById('listaClientes');
     
@@ -71,23 +72,29 @@ function agregarALista(tipoDoc, clienteNombre, docIdFirebase) {
     const texto = document.createElement('span');
     texto.innerHTML = `<strong>${tipoDoc}</strong> generado para: ${clienteNombre}`;
     
-    // Contenedor para los botones (Wpp y Borrar)
     const contenedorBotones = document.createElement('div');
     contenedorBotones.style.display = 'flex';
     contenedorBotones.style.gap = '10px';
     contenedorBotones.style.flexWrap = 'wrap';
     contenedorBotones.style.justifyContent = 'center';
 
-    // Botón WhatsApp
+    // --- LÓGICA DE WHATSAPP MEJORADA ---
+    // Limpiamos el número por si pones guiones o espacios
+    const telLimpio = telefono ? telefono.replace(/\D/g, '') : '';
+    // Si no le pusiste el código de Argentina (549), se lo agrega solo
+    const prefijo = telLimpio.startsWith('549') ? '' : '549';
+    
     const mensajeWpp = encodeURIComponent(`Hola ${clienteNombre}, te escribo de Portones Automáticos Córdoba. Te envío adjunto tu ${tipoDoc}.`);
     const btnWpp = document.createElement('a');
-    btnWpp.href = `https://wa.me/?text=${mensajeWpp}`;
+    
+    // Ahora el href va directo al número
+    btnWpp.href = `https://wa.me/${prefijo}${telLimpio}?text=${mensajeWpp}`;
     btnWpp.target = '_blank';
     btnWpp.className = 'btn-wpp';
     btnWpp.textContent = '📲 Enviar por WhatsApp';
     contenedorBotones.appendChild(btnWpp);
 
-    // Botón Borrar (Solo se crea si se guardó en Firebase previamente)
+        // Botón Borrar (Solo se crea si se guardó en Firebase previamente)
     if (docIdFirebase) {
         const btnBorrar = document.createElement('button');
         btnBorrar.textContent = '🗑️ Borrar de BD';
