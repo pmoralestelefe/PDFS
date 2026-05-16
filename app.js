@@ -246,6 +246,7 @@ btnRecibo.addEventListener('click', () => {
     doc.save(`ReciboPago_${data.cliente}.pdf`);
     agregarALista("Recibo", data.cliente, ultimoIdGuardado, data.telefono);
     ultimoIdGuardado = null; // Reiniciar
+});
 // 6. CARGAR BASE DE DATOS AL INICIAR
 async function cargarBaseDeDatos() {
     try {
@@ -263,4 +264,3 @@ async function cargarBaseDeDatos() {
 
 // Llamamos a la función automáticamente cuando carga el archivo
 cargarBaseDeDatos();
-});
