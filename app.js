@@ -28,6 +28,7 @@ const btnRecibo = document.getElementById('btnRecibo');
 function getDatosFormulario() {
     return {
         cliente: document.getElementById('cliente').value,
+        telefono: document.getElementById('telefono').value, // <-- NUEVO
         fecha: document.getElementById('fecha').value,
         detalles: document.getElementById('detalles').value,
         total: parseFloat(document.getElementById('total').value) || 0,
