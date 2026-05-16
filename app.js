@@ -244,6 +244,6 @@ btnRecibo.addEventListener('click', () => {
     doc.text("Firma cliente", 145, 267);
 
     doc.save(`ReciboPago_${data.cliente}.pdf`);
-    agregarALista("Recibo", data.cliente, ultimoIdGuardado); // Actualizado
+    agregarALista("Recibo", data.cliente, ultimoIdGuardado, data.telefono);
     ultimoIdGuardado = null; // Reiniciar
 });
