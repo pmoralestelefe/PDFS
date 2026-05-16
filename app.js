@@ -183,7 +183,7 @@ btnPresupuesto.addEventListener('click', () => {
     doc.text("Cliente", 150, 267);
 
     doc.save(`Presupuesto_${data.cliente}.pdf`);
-    agregarALista("Presupuesto", data.cliente, ultimoIdGuardado); // Actualizado
+    agregarALista("Presupuesto", data.cliente, ultimoIdGuardado, data.telefono);
     ultimoIdGuardado = null; // Reiniciar
 });
 
